@@ -1,0 +1,17 @@
+{
+  "name": "UCD",
+  "displayName": "UCD",
+  "expo": {
+    "name": "UCD",
+    "slug": "expo-template-bare",
+    "version": "1.0.0",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}
