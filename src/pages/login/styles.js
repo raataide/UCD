@@ -47,4 +47,29 @@ export default StyleSheet.create({
   viewPicker: {
     width: "100%",
   },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 35,
+    minWidth: "85%",
+    minHeight: "30%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 24,
+    marginBottom: 30,
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center",
+  },
 });
