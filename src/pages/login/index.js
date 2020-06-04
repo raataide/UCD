@@ -6,6 +6,9 @@ import {
   SafeAreaView,
   Image,
   Picker,
+  TouchableWithoutFeedback,
+  StyleSheet,
+  Alert,
 } from "react-native";
 
 import logo from "../../assets/logo_principal.png";
@@ -15,13 +18,18 @@ import styles from "./styles";
 import { useNavigation } from "@react-navigation/native";
 import { FloatingTitleTextInputField } from "../../components/input";
 import api from "../../services/api";
+import { MyModal } from "../../components/modal";
 
 export default function Login({ route }) {
   const [tipoLogin, setTipoLogin] = useState("");
   const [email, setEmail] = useState("");
+  const [emailReset, setEmailReset] = useState("");
   const [senha, setSenha] = useState("");
   const [formValido, setFormValido] = useState(false);
-  const [tipoUsuario, setTipoUsuario] = useState("Posto");
+  const [modalValido, setModalValido] = useState(false);
+  const [tipoUsuario, setTipoUsuario] = useState("Funcionario");
+  const [visibleModal, setVisibleModal] = useState(false);
+  const [resetEmailError, setResetEmailError] = useState(false);
 
   const RenderPicker = () => {
     return (
@@ -50,6 +58,15 @@ export default function Login({ route }) {
 
     if (attrName == "senha") {
       await setSenha(value);
+    }
+
+    if (attrName == "emailReset") {
+      await setEmailReset(value);
+      if (parse_email.test(emailReset)) {
+        setModalValido(true);
+      } else {
+        setModalValido(false);
+      }
     }
 
     if (tipoLogin !== "protocolo") {
@@ -82,8 +99,74 @@ export default function Login({ route }) {
       });
   };
 
+  const resetSenha = async () => {
+    await setResetEmailError(false);
+    await api
+      .post("solicitarNovaSenha", {
+        tipo: tipoUsuario,
+        email: email,
+      })
+      .then(async (res) => {
+        if (res.status == 200) {
+          onPress;
+          console.log("Email enviado");
+        }
+      })
+      .catch(async (error) => {
+        await setResetEmailError(true);
+      });
+  };
+
+  const onPress = () => {
+    setEmailReset("");
+    setResetEmailError(false);
+    setModalValido(false);
+    setVisibleModal(!visibleModal);
+  };
+
+  const backHome = () => {
+    navigation.navigate("Home");
+  };
   return (
     <SafeAreaView style={styles.container}>
+      <MyModal
+        visible={visibleModal}
+        onRequestClose={onPress}
+        onPressOverlay={onPress}
+      >
+        <View>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Cadastrar/Recuperar senha</Text>
+
+            {RenderPicker()}
+            <FloatingTitleTextInputField
+              attrName="emailReset"
+              title="Email"
+              value={emailReset}
+              autoCompleteType={"email"}
+              keyboardType={"email-address"}
+              updateMasterState={_updateMasterState}
+            />
+            <TouchableOpacity
+              style={[
+                styles.button,
+                modalValido ? {} : { backgroundColor: "gray" },
+              ]}
+              disabled={modalValido ? false : true}
+              onPress={resetSenha}
+            >
+              <Text style={[styles.txtButton, styles.txtEntrar]}>
+                Enviar email
+              </Text>
+            </TouchableOpacity>
+            {resetEmailError ? (
+              <Text style={{ color: "red", fontSize: 16 }}>
+                Falha ao enviar o e-mail, tente novamente mais tarde!
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      </MyModal>
       <Image style={styles.logo} source={logo} />
       {tipoLogin !== "protocolo" ? RenderPicker() : <></>}
       <FloatingTitleTextInputField
@@ -119,13 +202,18 @@ export default function Login({ route }) {
       {tipoLogin !== "protocolo" ? (
         <TouchableOpacity
           style={[styles.button, styles.buttonRecuperar]}
-          onPress={"_onPress"}
+          onPress={onPress}
         >
           <Text style={styles.txtButton}>Cadastrar/Recuperar minha Senha</Text>
         </TouchableOpacity>
       ) : (
         <></>
       )}
+      <TouchableOpacity style={{ paddingTop: 10 }} onPress={backHome}>
+        <Text style={{ textDecorationLine: "underline", fontSize: 16 }}>
+          Voltar
+        </Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
