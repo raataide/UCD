@@ -6,9 +6,7 @@ import {
   SafeAreaView,
   Image,
   Picker,
-  TouchableWithoutFeedback,
-  StyleSheet,
-  Alert,
+  AsyncStorage,
 } from "react-native";
 
 import logo from "../../assets/logo_principal.png";
@@ -22,10 +20,10 @@ import { MyModal } from "../../components/modal";
 
 export default function Login({ route }) {
   const [tipoLogin, setTipoLogin] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("raataide@gmail.com");
   const [emailReset, setEmailReset] = useState("");
-  const [senha, setSenha] = useState("");
-  const [formValido, setFormValido] = useState(false);
+  const [senha, setSenha] = useState("814496");
+  const [formValido, setFormValido] = useState(true);
   const [modalValido, setModalValido] = useState(false);
   const [tipoUsuario, setTipoUsuario] = useState("Funcionario");
   const [visibleModal, setVisibleModal] = useState(false);
@@ -94,6 +92,8 @@ export default function Login({ route }) {
       .then(async (res) => {
         let usuario = await JSON.stringify(res.data.usuario);
         if (usuario) {
+          await AsyncStorage.setItem("@UCDApp:token", res.data.token);
+          await AsyncStorage.setItem("@UCDApp:usuario", usuario);
           navigation.navigate("Exames");
         }
       });
