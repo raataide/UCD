@@ -12,7 +12,7 @@ export default StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
-    height: 60,
+    height: 50,
     backgroundColor: "#007bff",
     borderRadius: 9,
     marginVertical: 10,
@@ -21,7 +21,7 @@ export default StyleSheet.create({
     backgroundColor: "#DDDDDD",
   },
   txtButton: {
-    fontSize: 20,
+    fontSize: 18,
     color: "black",
     fontWeight: "600",
   },
@@ -29,20 +29,20 @@ export default StyleSheet.create({
     color: "white",
   },
   logo: {
-    width: 150,
-    height: 94,
+    marginTop: 30,
     marginBottom: 30,
   },
   labelTipo: {
     fontSize: 16,
     fontWeight: "bold",
-    paddingBottom: 10,
+    paddingBottom: 5,
   },
   picker: {
     borderWidth: 1,
     borderColor: "black",
     borderRadius: 9,
     width: "100%",
+    height: 40,
   },
   viewPicker: {
     width: "100%",
@@ -52,8 +52,6 @@ export default StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 10,
     padding: 35,
-    minWidth: "85%",
-    minHeight: "30%",
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
