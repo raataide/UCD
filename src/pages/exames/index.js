@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import Share from "react-native-share";
+
 import api from "../../services/api";
 
 import logo from "../../assets/logo.png";
@@ -17,17 +19,83 @@ import Icon from "react-native-vector-icons/AntDesign";
 
 import styles from "./styles";
 
-export default function Exames() {
+export default function Exames({ route }) {
   const [usuario, setUsuario] = useState({});
   const [exames, setExames] = useState([]);
   const [showitem, setShowItem] = useState(5);
   const [loading, setLoading] = useState(false);
+  const [base64pdf, setBase64pdf] = useState("");
 
+  const tipoLogin = route.params ? route.params.tipoLogin : "";
+  const protocolo = route.params ? route.params.protocolo : "";
   const navigation = useNavigation();
 
   async function loadMore() {
     await setShowItem(showitem + 5);
   }
+
+  async function getFile(hash) {
+    let options = {};
+    const token = await AsyncStorage.getItem("@UCDApp:token");
+    console.log(token);
+    options.hash = hash;
+    if (tipoLogin == "protocolo") {
+      options.protocolo = protocolo;
+      options.senha = route.params.senha;
+    } else {
+      options.token = token;
+    }
+    console.log(options);
+    const result = await api.post("pegarArquivo", options);
+    return result;
+  }
+
+  const onViewPdf = async (hash) => {
+    setBase64pdf("asdasd");
+
+    const b64Pdf = await getFile(hash);
+
+    setBase64pdf(b64Pdf.data);
+
+    if (base64pdf) {
+      navigation.navigate("Pdf", { base64: base64pdf });
+    } else {
+      alert("Falha ao visualizar o PDF, tente novamente!");
+    }
+  };
+
+  const onShare = async (hash) => {
+    const b64Pdf = await getFile(hash);
+    const url = "data:application/pdf;base64," + b64Pdf.data;
+    const title = "Resultado do exame";
+    const options = Platform.select({
+      ios: {
+        activityItemSources: [
+          {
+            // For sharing url with custom title.
+            placeholderItem: { type: "url", content: url },
+            item: {
+              default: { type: "url", content: url },
+            },
+            subject: {
+              default: title,
+            },
+            linkMetadata: {
+              originalUrl: url,
+              url,
+              title: title,
+            },
+          },
+        ],
+      },
+      android: {
+        title: title,
+        subject: title,
+        url: url,
+      },
+    });
+    Share.open(options);
+  };
 
   async function getUsuarioAS() {
     try {
@@ -41,24 +109,39 @@ export default function Exames() {
   }
 
   async function getExames() {
-    const tokenString = await AsyncStorage.getItem("@UCDApp:token");
+    if (tipoLogin == "protocolo") {
+      await api
+        .post("examesPorProtocolo", {
+          protocolo: protocolo,
+          senha: route.params.senha,
+        })
+        .then(async (res) => {
+          if (res) {
+            setLoading(true);
+            setExames(res.data.exames);
+          }
+        });
+    } else {
+      const tokenString = await AsyncStorage.getItem("@UCDApp:token");
 
-    await api
-      .post("examesPorUsuario", {
-        token: tokenString,
-      })
-      .then(async (res) => {
-        if (res) {
-          setLoading(true);
-          await setExames(res.data.exames);
-        }
-      });
+      await api
+        .post("examesPorUsuario", {
+          token: tokenString,
+        })
+        .then(async (res) => {
+          if (res) {
+            setLoading(true);
+            setExames(res.data.exames);
+          }
+        });
+    }
   }
 
   useEffect(() => {
     getUsuarioAS();
     getExames();
   }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -72,8 +155,12 @@ export default function Exames() {
           <Image source={logo} />
         </View>
         <View>
-          <Text style={styles.headerTextTitulo}>{usuario.nome}</Text>
-          <Text style={styles.headerTextDesc}>{usuario.tipo}</Text>
+          <Text style={styles.headerTextTitulo}>
+            {tipoLogin == "protocolo" ? "Protocolo" : usuario.nome}
+          </Text>
+          <Text style={styles.headerTextDesc}>
+            {tipoLogin == "protocolo" ? protocolo : usuario.tipo}
+          </Text>
         </View>
       </View>
       <View style={{ borderBottomWidth: 1, borderBottomColor: "gray" }}></View>
@@ -116,7 +203,7 @@ export default function Exames() {
                 <TouchableOpacity
                   style={styles.button}
                   onPress={() => {
-                    onShare(exame.hash);
+                    onViewPdf(exame.hash);
                   }}
                 >
                   <Text style={styles.textButton}>Visualizar</Text>

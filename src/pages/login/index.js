@@ -21,8 +21,12 @@ import { MyModal } from "../../components/modal";
 export default function Login({ route }) {
   const [tipoLogin, setTipoLogin] = useState("");
   const [email, setEmail] = useState("raataide@gmail.com");
-  const [emailReset, setEmailReset] = useState("");
   const [senha, setSenha] = useState("814496");
+  // const [email, setEmail] = useState("754210");
+  // const [senha, setSenha] = useState("52B5FC");
+  // const [email, setEmail] = useState("");
+  // const [senha, setSenha] = useState("");
+  const [emailReset, setEmailReset] = useState("");
   const [formValido, setFormValido] = useState(true);
   const [modalValido, setModalValido] = useState(false);
   const [tipoUsuario, setTipoUsuario] = useState("Funcionario");
@@ -35,6 +39,7 @@ export default function Login({ route }) {
         <Text style={styles.labelTipo}>Acesso:</Text>
         <View style={styles.picker}>
           <Picker
+            style={{ height: 40 }}
             selectedValue={tipoUsuario}
             onValueChange={(itemValue) => setTipoUsuario(itemValue)}
           >
@@ -83,20 +88,28 @@ export default function Login({ route }) {
   const navigation = useNavigation();
 
   const entrar = async () => {
-    await api
-      .post("login", {
-        tipo: tipoUsuario,
-        email: email,
+    if (tipoLogin == "protocolo") {
+      navigation.navigate("Exames", {
+        protocolo: email,
         senha: senha,
-      })
-      .then(async (res) => {
-        let usuario = await JSON.stringify(res.data.usuario);
-        if (usuario) {
-          await AsyncStorage.setItem("@UCDApp:token", res.data.token);
-          await AsyncStorage.setItem("@UCDApp:usuario", usuario);
-          navigation.navigate("Exames");
-        }
+        tipoLogin: "protocolo",
       });
+    } else {
+      await api
+        .post("login", {
+          tipo: tipoUsuario,
+          email: email,
+          senha: senha,
+        })
+        .then(async (res) => {
+          const usuario = await JSON.stringify(res.data.usuario);
+          if (usuario) {
+            await AsyncStorage.setItem("@UCDApp:token", res.data.token);
+            await AsyncStorage.setItem("@UCDApp:usuario", usuario);
+            navigation.navigate("Exames", { tipoLogin: "email" });
+          }
+        });
+    }
   };
 
   const resetSenha = async () => {
@@ -180,8 +193,8 @@ export default function Login({ route }) {
             : "numbers-and-punctuation"
         }
         updateMasterState={_updateMasterState}
-        titleActiveSize={16}
-        titleInActiveSize={20}
+        titleActiveSize={12}
+        titleInActiveSize={16}
       />
       <FloatingTitleTextInputField
         attrName="senha"
@@ -189,8 +202,8 @@ export default function Login({ route }) {
         value={senha}
         secureTextEntry={true}
         updateMasterState={_updateMasterState}
-        titleActiveSize={16}
-        titleInActiveSize={20}
+        titleActiveSize={12}
+        titleInActiveSize={16}
       />
       <TouchableOpacity
         style={[styles.button, formValido ? {} : { backgroundColor: "gray" }]}
@@ -204,7 +217,7 @@ export default function Login({ route }) {
           style={[styles.button, styles.buttonRecuperar]}
           onPress={onPress}
         >
-          <Text style={styles.txtButton}>Cadastrar/Recuperar minha Senha</Text>
+          <Text style={styles.txtButton}>Cadastrar/Recuperar Senha</Text>
         </TouchableOpacity>
       ) : (
         <></>
