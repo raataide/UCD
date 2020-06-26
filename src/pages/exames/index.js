@@ -81,9 +81,7 @@ export default function Exames({ route }) {
   }
 
   const onViewPdf = async (hash, index) => {
-    console.log("index" + index);
     setIndexClicked(index);
-    console.log(indexClicked);
     setLoadingFile(true);
     let b64 = await getFile(hash);
     if (b64) {
