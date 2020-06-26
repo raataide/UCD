@@ -8,6 +8,8 @@ import {
   FlatList,
   AsyncStorage,
   ActivityIndicator,
+  TextInput,
+  Picker,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Share from "react-native-share";
@@ -22,9 +24,13 @@ import styles from "./styles";
 export default function Exames({ route }) {
   const [usuario, setUsuario] = useState({});
   const [exames, setExames] = useState([]);
+  const [examesBkp, setExamesBkp] = useState([]);
   const [showitem, setShowItem] = useState(5);
   const [loading, setLoading] = useState(false);
-  const [base64pdf, setBase64pdf] = useState("");
+  const [loadingFile, setLoadingFile] = useState(false);
+  const [indexClicked, setIndexClicked] = useState(null);
+  const [sharingFile, setSharingFile] = useState(false);
+  const [tipoPesquisa, setTipoPesquisa] = useState("Protocolo");
 
   const tipoLogin = route.params ? route.params.tipoLogin : "";
   const protocolo = route.params ? route.params.protocolo : "";
@@ -34,10 +40,34 @@ export default function Exames({ route }) {
     await setShowItem(showitem + 5);
   }
 
+  async function search(value) {
+    let examesFiltered;
+    if (tipoPesquisa == "Protocolo") {
+      examesFiltered = examesBkp.filter((exame) =>
+        exame.cdProtocolo.includes(value)
+      );
+    }
+    if (tipoPesquisa == "Paciente") {
+      examesFiltered = examesBkp.filter((exame) =>
+        exame.nomePaciente.includes(value)
+      );
+    }
+    if (tipoPesquisa == "Data") {
+      examesFiltered = examesBkp.filter((exame) =>
+        exame.dataExame.includes(value)
+      );
+    }
+    if (tipoPesquisa == "Exame") {
+      examesFiltered = examesBkp.filter((exame) =>
+        exame.cdExame.includes(value)
+      );
+    }
+    setExames(examesFiltered);
+  }
+
   async function getFile(hash) {
     let options = {};
     const token = await AsyncStorage.getItem("@UCDApp:token");
-    console.log(token);
     options.hash = hash;
     if (tipoLogin == "protocolo") {
       options.protocolo = protocolo;
@@ -45,28 +75,32 @@ export default function Exames({ route }) {
     } else {
       options.token = token;
     }
-    console.log(options);
     const result = await api.post("pegarArquivo", options);
-    return result;
+
+    return result.data;
   }
 
-  const onViewPdf = async (hash) => {
-    setBase64pdf("asdasd");
-
-    const b64Pdf = await getFile(hash);
-
-    setBase64pdf(b64Pdf.data);
-
-    if (base64pdf) {
-      navigation.navigate("Pdf", { base64: base64pdf });
+  const onViewPdf = async (hash, index) => {
+    console.log("index" + index);
+    setIndexClicked(index);
+    console.log(indexClicked);
+    setLoadingFile(true);
+    let b64 = await getFile(hash);
+    if (b64) {
+      setLoadingFile(false);
+      navigation.navigate("Pdf", { base64: b64 });
     } else {
+      setLoadingFile(false);
       alert("Falha ao visualizar o PDF, tente novamente!");
     }
   };
 
-  const onShare = async (hash) => {
+  const onShare = async (hash, index) => {
+    setIndexClicked(index);
+    setSharingFile(true);
     const b64Pdf = await getFile(hash);
-    const url = "data:application/pdf;base64," + b64Pdf.data;
+    setSharingFile(false);
+    const url = "data:application/pdf;base64," + b64Pdf;
     const title = "Resultado do exame";
     const options = Platform.select({
       ios: {
@@ -119,11 +153,11 @@ export default function Exames({ route }) {
           if (res) {
             setLoading(true);
             setExames(res.data.exames);
+            setExamesBkp(res.data.exames);
           }
         });
     } else {
       const tokenString = await AsyncStorage.getItem("@UCDApp:token");
-
       await api
         .post("examesPorUsuario", {
           token: tokenString,
@@ -132,6 +166,7 @@ export default function Exames({ route }) {
           if (res) {
             setLoading(true);
             setExames(res.data.exames);
+            setExamesBkp(res.data.exames);
           }
         });
     }
@@ -139,6 +174,8 @@ export default function Exames({ route }) {
 
   useEffect(() => {
     getUsuarioAS();
+  }, []);
+  useEffect(() => {
     getExames();
   }, []);
 
@@ -163,9 +200,26 @@ export default function Exames({ route }) {
           </Text>
         </View>
       </View>
-      <View style={{ borderBottomWidth: 1, borderBottomColor: "gray" }}></View>
-      <View>
-        <Text>Pesquisar</Text>
+      <View style={styles.searchSection}>
+        <Icon style={styles.searchIcon} name="search1" size={20} color="gray" />
+        <TextInput
+          style={styles.input}
+          placeholder={"Pesquisar por " + tipoPesquisa}
+          onChangeText={(value) => {
+            search(value);
+          }}
+          underlineColorAndroid="transparent"
+        />
+        <Picker
+          style={{ height: 40, width: 40 }}
+          selectedValue={tipoPesquisa}
+          onValueChange={(itemValue) => setTipoPesquisa(itemValue)}
+        >
+          <Picker.Item label="Paciente" value="Paciente" />
+          <Picker.Item label="Data" value="Data" />
+          <Picker.Item label="Protocolo" value="Protocolo" />
+          <Picker.Item label="Exame" value="Exame" />
+        </Picker>
       </View>
 
       {!loading ? (
@@ -179,7 +233,7 @@ export default function Exames({ route }) {
           showsVerticalScrollIndicator={false}
           onEndReached={loadMore}
           onEndReachedThreshold={0.2}
-          renderItem={({ item: exame }) => (
+          renderItem={({ item: exame, index }) => (
             <View style={styles.exame}>
               <Text style={styles.exameTitle}>Paciente:</Text>
               <Text style={styles.exameDesc}>{exame.nomePaciente}</Text>
@@ -202,19 +256,29 @@ export default function Exames({ route }) {
               <View style={styles.viewButtons}>
                 <TouchableOpacity
                   style={styles.button}
+                  disabled={!loadingFile && !sharingFile ? false : true}
                   onPress={() => {
-                    onViewPdf(exame.hash);
+                    onViewPdf(exame.hash, index);
                   }}
                 >
-                  <Text style={styles.textButton}>Visualizar</Text>
+                  {!loadingFile || index != indexClicked ? (
+                    <Text style={styles.textButton}>Visualizar</Text>
+                  ) : (
+                    <ActivityIndicator size={30} color="white" />
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.button, styles.buttonShare]}
+                  disabled={!sharingFile && !loadingFile ? false : true}
                   onPress={() => {
-                    onShare(exame.hash);
+                    onShare(exame.hash, index);
                   }}
                 >
-                  <Text style={styles.textButton}>Compartilhar</Text>
+                  {!sharingFile || index != indexClicked ? (
+                    <Text style={styles.textButton}>Compartilhar</Text>
+                  ) : (
+                    <ActivityIndicator size={30} color="white" />
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
