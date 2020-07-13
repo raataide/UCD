@@ -21,7 +21,7 @@ import { MyModal } from "../../components/modal";
 export default function Login({ route }) {
   const [tipoLogin, setTipoLogin] = useState("");
   const [email, setEmail] = useState("raataide@gmail.com");
-  const [senha, setSenha] = useState("814496");
+  const [senha, setSenha] = useState("81449");
   // const [email, setEmail] = useState("754210");
   // const [senha, setSenha] = useState("52B5FC");
   // const [email, setEmail] = useState("");
@@ -108,6 +108,9 @@ export default function Login({ route }) {
             await AsyncStorage.setItem("@UCDApp:usuario", usuario);
             navigation.navigate("Exames", { tipoLogin: "email" });
           }
+        })
+        .catch((error) => {
+          alert("Falha ao realizar login. Tente novamente!");
         });
     }
   };
@@ -121,12 +124,11 @@ export default function Login({ route }) {
       })
       .then(async (res) => {
         if (res.status == 200) {
-          onPress;
-          console.log("Email enviado");
+          setVisibleModal(false);
         }
       })
       .catch(async (error) => {
-        await setResetEmailError(true);
+        setResetEmailError(true);
       });
   };
 
